@@ -167,8 +167,10 @@ def index(): return serve_html("index")
 
 @app.route("/home")
 def home():
-    if "user" not in session: return redirect("/")
+    if "user" not in session: 
+        return redirect("/")  # If not logged in, redirect to home page.
     return serve_html("home")
+
 
 @app.before_request
 def restrict_admin_routes():
@@ -213,9 +215,13 @@ def api_wrestling_videos():
 
 @app.route("/admin")
 def admin():
-    if "user" not in session or not session.get("admin"): 
-        return redirect("/home")  # Redirect to home if not admin
+    # Ensure the user is logged in and is an admin
+    if "user" not in session or not session.get("admin"):
+        print(f"Access Denied for {session.get('user')}. Admin status: {session.get('admin')}")
+        return redirect("/home")  # Redirect non-admin users to home
+
     return serve_html("admin")
+
 
 # ----------------- Authentication -----------------
 @app.route("/auth", methods=["POST"])
@@ -252,6 +258,10 @@ def auth():
             if user:
                 # Update session after login
                 session.update({"user": user[1], "email": user[2], "admin": user[4]})
+                
+                # Debugging: Check the session values
+                print(f"Session after login: {session}")
+                
                 return jsonify({"status": "ok", "redirect": "/admin" if user[4] else "/home"})
             return jsonify({"status": "error", "message": "Invalid credentials."})
 
