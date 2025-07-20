@@ -213,8 +213,8 @@ def api_wrestling_videos():
 
 @app.route("/admin")
 def admin():
-    if "user" not in session or not session.get("admin"):
-        return redirect("/")
+    if "user" not in session or not session.get("admin"): 
+        return redirect("/home")  # Redirect to home if not admin
     return serve_html("admin")
 
 # ----------------- Authentication -----------------
@@ -235,15 +235,14 @@ def auth():
                 return jsonify({"status": "error", "message": "Password too short."})
             if cur.execute("SELECT 1 FROM users WHERE username=? OR email=?", (username, email)).fetchone():
                 return jsonify({"status": "error", "message": "Username/email exists."})
-
-            # Force first user to be an admin
+            
+            # Make the first user an admin
             is_admin = 1 if cur.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0 else 0
-
-            # Insert new user, first user will be admin
             cur.execute("INSERT INTO users (username, email, password, is_admin) VALUES (?, ?, ?, ?)",
                         (username, email, hash_password(password), is_admin))
             conn.commit()
-
+            
+            # Update session after registration
             session.update({"user": username, "email": email, "admin": is_admin})
             return jsonify({"status": "ok", "redirect": "/admin" if is_admin else "/home"})
 
@@ -251,6 +250,7 @@ def auth():
             user = cur.execute("SELECT * FROM users WHERE (username=? OR email=?) AND password=?",
                                (username, username, hash_password(password))).fetchone()
             if user:
+                # Update session after login
                 session.update({"user": user[1], "email": user[2], "admin": user[4]})
                 return jsonify({"status": "ok", "redirect": "/admin" if user[4] else "/home"})
             return jsonify({"status": "error", "message": "Invalid credentials."})
@@ -260,10 +260,9 @@ def auth():
                 return jsonify({"status": "error", "message": "Password too short."})
             if cur.execute("UPDATE users SET password=? WHERE (username=? OR email=?)",
                            (hash_password(new_password), username, email)).rowcount:
-                conn.commit()
+                conn.commit(); 
                 return jsonify({"status": "ok"})
             return jsonify({"status": "error", "message": "User not found."})
-
     return jsonify({"status": "error", "message": "Unknown action."})
 
 # ----------------- Watch & Download -----------------
