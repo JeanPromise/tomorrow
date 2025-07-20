@@ -175,9 +175,12 @@ def home():
 @app.before_request
 def restrict_admin_routes():
     if request.path.startswith("/admin"):
+        if session.get("admin"):  # If logged-in user is admin, allow access
+            return
         token = request.headers.get("X-Access-Key")
         if token != ADMIN_KEY:
             abort(403)
+
 
 @app.route("/movies")
 def movies():
@@ -561,6 +564,5 @@ def logout():
     return redirect("/")
 
 # ----------------- Run -----------------
-
 if __name__ == "__main__":
     serve(app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))  # Listen on port 8080 or environment variable PORT
