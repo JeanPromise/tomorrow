@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Welcome | MovieStream</title>
+  <style>
+    body {
+      margin: 0;
+      background: #141414;
+      font-family: 'Segoe UI', sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: rgba(0,0,0,0.85);
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 420px;
+      width: 95%;
+      box-shadow: 0 0 20px rgba(255,0,0,0.2);
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      color: #e50914;
+    }
+    .tab-select {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .tab-select button {
+      flex: 1;
+      padding: 10px;
+      background: #333;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .tab-select button.active {
+      background: #e50914;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 6px;
+      background: #222;
+      color: #fff;
+    }
+    button.submit {
+      width: 100%;
+      padding: 12px;
+      background: #e50914;
+      border: none;
+      color: white;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    .toggle-btn {
+      margin-top: -8px;
+      background: none;
+      border: none;
+      color: #aaa;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-align: right;
+      width: 100%;
+    }
+    #message {
+      text-align: center;
+      margin-top: 10px;
+      color: #f44336;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>MovieStream</h1>
+    <div class="tab-select">
+      <button id="loginTab" class="active" onclick="switchTab('login')">Login</button>
+      <button id="registerTab" onclick="switchTab('register')">Register</button>
+      <button id="resetTab" onclick="switchTab('reset')">Reset</button>
+    </div>
+
+    <input type="text" id="username" placeholder="Username (or leave empty)" />
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Password" />
+    <input type="password" id="new_password" placeholder="New Password" style="display:none;" />
+
+    <button class="toggle-btn" onclick="togglePassword()">👁 Show/Hide Password</button>
+    <button class="submit" onclick="submitForm()">Continue</button>
+    <p id="message"></p>
+  </div>
+
+  <script>
+    let currentAction = "login";
+    const tabs = {
+      login: document.getElementById("loginTab"),
+      register: document.getElementById("registerTab"),
+      reset: document.getElementById("resetTab")
+    };
+
+    function switchTab(tab) {
+      currentAction = tab;
+      for (const key in tabs) {
+        tabs[key].classList.remove("active");
+      }
+      tabs[tab].classList.add("active");
+
+      document.getElementById("new_password").style.display = (tab === "reset") ? "block" : "none";
+      document.getElementById("message").innerText = "";
+    }
+
+    function togglePassword() {
+      ["password", "new_password"].forEach(id => {
+        const input = document.getElementById(id);
+        if (input && input.offsetParent !== null) {
+          input.type = input.type === "password" ? "text" : "password";
+        }
+      });
+    }
+
+    function submitForm() {
+      const data = new URLSearchParams();
+      data.append("action", currentAction);
+      data.append("username", document.getElementById("username").value.trim());
+      data.append("email", document.getElementById("email").value.trim());
+      data.append("password", document.getElementById("password").value.trim());
+      data.append("new_password", document.getElementById("new_password").value.trim());
+
+      fetch("{{ url_for('auth') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: data
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === "ok" && res.redirect) {
+          location.href = res.redirect;
+        } else {
+          document.getElementById("message").innerText = res.message || "Failed.";
+        }
+      })
+      .catch(err => {
+        document.getElementById("message").innerText = "Something went wrong.";
+        console.error(err);
+      });
+    }
+  </script>
+
+</body>
+</html>
