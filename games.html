@@ -62,29 +62,35 @@
   <header>
     <div class="logo">GameZone</div>
     <div class="nav-icons">
-      <i class="fas fa-home" onclick="location.href='{{ url_for('home') }}'"></i>
+      <i class="fas fa-home" onclick="location.href='/home'"></i>
       <i class="fas fa-bars" onclick="toggleSidebar()"></i>
     </div>
   </header>
 
   <div class="sidebar" id="sidebar">
-    <div class="sidebar-item" onclick="location.href='{{ url_for('home') }}'">Home</div>
-    <div class="sidebar-item" onclick="location.href='{{ url_for('movies') }}'">Movies</div>
-    <div class="sidebar-item" onclick="location.href='{{ url_for('games') }}'">Games</div>
-    <div class="sidebar-item" onclick="location.href='{{ url_for('watch') }}'">TV/Trending</div>
-    <div class="sidebar-item" onclick="location.href='{{ url_for('side') }}'">Billing/About</div>
+    <div class="sidebar-item" onclick="location.href='/home'">Home</div>
+    <div class="sidebar-item" onclick="location.href='/movies'">Movies</div>
+    <div class="sidebar-item" onclick="location.href='/games'">Games</div>
+    <div class="sidebar-item" onclick="location.href='/watch'">TV/Trending</div>
+    <div class="sidebar-item" onclick="location.href='/side'">Billing/About</div>
   </div>
 
   <div class="section">
     <div id="category-view">
       <h2>Select a Category</h2>
       <div class="grid">
-        {% for category in categories %}
-        <div class="game-card" onclick="showChannels('{{ category.slug }}')">
-          <img src="{{ url_for('static', filename='media/thumbs/' ~ category.image) }}" alt="{{ category.name }}">
-          <div class="title">{{ category.name }}</div>
+        <div class="game-card" onclick="showChannels('sports')">
+          <img src="static/media/thumbs/sports.jpg" alt="Sports">
+          <div class="title">Sports</div>
         </div>
-        {% endfor %}
+        <div class="game-card" onclick="showChannels('news')">
+          <img src="static/media/thumbs/news.jpg" alt="News">
+          <div class="title">News</div>
+        </div>
+        <div class="game-card" onclick="showChannels('kids')">
+          <img src="static/media/thumbs/kids.jpg" alt="Kids">
+          <div class="title">Kids</div>
+        </div>
       </div>
     </div>
 
@@ -122,25 +128,19 @@
       list.innerHTML = "";
       player.classList.add("hidden");
 
-      try {
-        const res = await fetch(`/api/channels?category=${category}`);
-        const data = await res.json();
+      // Static Example Channels
+      const staticChannels = [
+        { name: "Channel 1", url: "videos/sample1.mp4" },
+        { name: "Channel 2", url: "videos/sample2.mp4" }
+      ];
 
-        if (data.length === 0) {
-          list.innerHTML = "<div style='padding:1rem'>No live channels available for this category.</div>";
-          return;
-        }
-
-        data.forEach(ch => {
-          const btn = document.createElement("div");
-          btn.className = "channel-btn";
-          btn.textContent = ch.name;
-          btn.onclick = () => playChannel(ch.name, `/proxy/${encodeURIComponent(ch.url)}`);
-          list.appendChild(btn);
-        });
-      } catch (err) {
-        list.innerHTML = "<div style='padding:1rem;color:red'>Failed to load channels.</div>";
-      }
+      staticChannels.forEach(ch => {
+        const btn = document.createElement("div");
+        btn.className = "channel-btn";
+        btn.textContent = ch.name;
+        btn.onclick = () => playChannel(ch.name, ch.url);
+        list.appendChild(btn);
+      });
     }
 
     function playChannel(name, url) {
@@ -162,21 +162,12 @@
     function enterMini() {
       const video = document.getElementById("video");
       if (document.pictureInPictureEnabled) {
-        video.requestPictureInPicture().catch(err => alert("Mini player not supported."));
+        video.requestPictureInPicture().catch(() => alert("Mini player not supported."));
       }
     }
 
     function castVideo() {
-      const video = document.getElementById("video");
-      if (navigator.mediaSession && window.cast) {
-        window.cast.requestSession().then(() => {
-          const mediaInfo = new chrome.cast.media.MediaInfo(video.src, "application/x-mpegURL");
-          const request = new chrome.cast.media.LoadRequest(mediaInfo);
-          window.castSession.loadMedia(request);
-        });
-      } else {
-        alert("Casting not supported in this browser.");
-      }
+      alert("Casting is not supported in this static demo.");
     }
 
     function backToCategories() {
