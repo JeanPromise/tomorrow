@@ -187,11 +187,21 @@ def movies():
     if "user" not in session: return redirect("/")
     return serve_html("movies")
 
+# Serve manifest.json
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('.', 'manifest.json')
+
 @app.route("/games")
 def games():
     if "user" not in session: return redirect("/")
     if not has_payment(session["user"]): return "Payment required", 403
     return serve_html("games")
+
+# Serve service worker
+@app.route('/sw.js')
+def service_worker():
+    return send_from_directory('.', 'sw.js')
 
 @app.route("/animation")
 def animation():
@@ -564,5 +574,6 @@ def logout():
     return redirect("/")
 
 # ----------------- Run -----------------
+
 if __name__ == "__main__":
     serve(app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))  # Listen on port 8080 or environment variable PORT
