@@ -2,10 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Welcome | MovieStream</title>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#e50914">
   <style>
     body {
       margin: 0;
@@ -45,6 +42,7 @@
       color: #fff;
       cursor: pointer;
       font-weight: bold;
+      transition: 0.3s;
     }
     .tab-select button.active {
       background: #e50914;
@@ -84,20 +82,6 @@
       margin-top: 10px;
       color: #f44336;
     }
-    #installBtn {
-      display: none;
-      margin-top: 1rem;
-      background: #444;
-      color: white;
-      border: none;
-      padding: 10px;
-      width: 100%;
-      cursor: pointer;
-      border-radius: 6px;
-    }
-    #installBtn:hover {
-      background: #e50914;
-    }
   </style>
 </head>
 <body>
@@ -110,14 +94,13 @@
       <button id="resetTab" onclick="switchTab('reset')">Reset</button>
     </div>
 
-    <input type="text" id="username" placeholder="Username (or leave empty)" />
+    <input type="text" id="username" placeholder="Username" />
     <input type="email" id="email" placeholder="Email" />
     <input type="password" id="password" placeholder="Password" />
     <input type="password" id="new_password" placeholder="New Password" style="display:none;" />
 
     <button class="toggle-btn" onclick="togglePassword()">👁 Show/Hide Password</button>
     <button class="submit" onclick="submitForm()">Continue</button>
-    <button id="installBtn">📥 Install App</button>
     <p id="message"></p>
   </div>
 
@@ -155,7 +138,7 @@
       data.append("password", document.getElementById("password").value.trim());
       data.append("new_password", document.getElementById("new_password").value.trim());
 
-      fetch("{{ url_for('auth') }}", {
+      fetch("/auth", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: data
@@ -163,7 +146,7 @@
       .then(res => res.json())
       .then(res => {
         if (res.status === "ok" && res.redirect) {
-          location.href = res.redirect;
+          window.location.href = res.redirect;
         } else {
           document.getElementById("message").innerText = res.message || "Failed.";
         }
@@ -172,30 +155,6 @@
         document.getElementById("message").innerText = "Something went wrong.";
         console.error(err);
       });
-    }
-
-    // PWA install prompt
-    let deferredPrompt;
-    const installBtn = document.getElementById('installBtn');
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBtn.style.display = 'block';
-    });
-
-    installBtn.addEventListener('click', () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(() => {
-          deferredPrompt = null;
-        });
-      }
-    });
-
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(console.error);
     }
   </script>
 
