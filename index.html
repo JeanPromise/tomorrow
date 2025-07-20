@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Welcome | MovieStream</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#e50914">
   <style>
     body {
       margin: 0;
@@ -81,6 +84,20 @@
       margin-top: 10px;
       color: #f44336;
     }
+    #installBtn {
+      display: none;
+      margin-top: 1rem;
+      background: #444;
+      color: white;
+      border: none;
+      padding: 10px;
+      width: 100%;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    #installBtn:hover {
+      background: #e50914;
+    }
   </style>
 </head>
 <body>
@@ -100,8 +117,7 @@
 
     <button class="toggle-btn" onclick="togglePassword()">👁 Show/Hide Password</button>
     <button class="submit" onclick="submitForm()">Continue</button>
-    <!-- Download Button -->
-    <button class="submit" onclick="downloadApp()">⬇ Download App</button>
+    <button id="installBtn">📥 Install App</button>
     <p id="message"></p>
   </div>
 
@@ -115,9 +131,7 @@
 
     function switchTab(tab) {
       currentAction = tab;
-      for (const key in tabs) {
-        tabs[key].classList.remove("active");
-      }
+      for (const key in tabs) tabs[key].classList.remove("active");
       tabs[tab].classList.add("active");
 
       document.getElementById("new_password").style.display = (tab === "reset") ? "block" : "none";
@@ -160,21 +174,29 @@
       });
     }
 
-    function downloadApp() {
-      const link = document.createElement('a');
-      link.href = '/static/app/MovieStream.apk';  // Replace with your real file path
-      link.download = 'MovieStream.apk';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
+    // PWA install prompt
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
 
-    function autoDownloadIfNeeded() {
-      if (window.location.search.includes("autodl")) {
-        downloadApp();
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'block';
+    });
+
+    installBtn.addEventListener('click', () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          deferredPrompt = null;
+        });
       }
+    });
+
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(console.error);
     }
-    window.onload = autoDownloadIfNeeded;
   </script>
 
 </body>
