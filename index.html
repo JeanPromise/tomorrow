@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Welcome | MovieStream</title>
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#e50914">
+  
   <style>
     body {
       margin: 0;
@@ -22,6 +28,7 @@
       max-width: 420px;
       width: 95%;
       box-shadow: 0 0 20px rgba(255,0,0,0.2);
+      text-align: center;
     }
     h1 {
       text-align: center;
@@ -42,7 +49,6 @@
       color: #fff;
       cursor: pointer;
       font-weight: bold;
-      transition: 0.3s;
     }
     .tab-select button.active {
       background: #e50914;
@@ -82,6 +88,19 @@
       margin-top: 10px;
       color: #f44336;
     }
+    /* Install button */
+    #installBtn {
+      margin-top: 1rem;
+      padding: 12px;
+      background: yellow;
+      color: black;
+      font-weight: bold;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -94,13 +113,14 @@
       <button id="resetTab" onclick="switchTab('reset')">Reset</button>
     </div>
 
-    <input type="text" id="username" placeholder="Username" />
+    <input type="text" id="username" placeholder="Username (or leave empty)" />
     <input type="email" id="email" placeholder="Email" />
     <input type="password" id="password" placeholder="Password" />
     <input type="password" id="new_password" placeholder="New Password" style="display:none;" />
 
     <button class="toggle-btn" onclick="togglePassword()">👁 Show/Hide Password</button>
     <button class="submit" onclick="submitForm()">Continue</button>
+    <button id="installBtn" style="display:none;">⬇ Install App</button>
     <p id="message"></p>
   </div>
 
@@ -116,7 +136,6 @@
       currentAction = tab;
       for (const key in tabs) tabs[key].classList.remove("active");
       tabs[tab].classList.add("active");
-
       document.getElementById("new_password").style.display = (tab === "reset") ? "block" : "none";
       document.getElementById("message").innerText = "";
     }
@@ -138,7 +157,7 @@
       data.append("password", document.getElementById("password").value.trim());
       data.append("new_password", document.getElementById("new_password").value.trim());
 
-      fetch("/auth", {
+      fetch("{{ url_for('auth') }}", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: data
@@ -146,15 +165,36 @@
       .then(res => res.json())
       .then(res => {
         if (res.status === "ok" && res.redirect) {
-          window.location.href = res.redirect;
+          location.href = res.redirect;
         } else {
           document.getElementById("message").innerText = res.message || "Failed.";
         }
       })
-      .catch(err => {
-        document.getElementById("message").innerText = "Something went wrong.";
-        console.error(err);
-      });
+      .catch(() => document.getElementById("message").innerText = "Something went wrong.");
+    }
+
+    // PWA Install Button Logic
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'block';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') console.log('PWA installed');
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').then(() => console.log('SW registered'));
     }
   </script>
 
