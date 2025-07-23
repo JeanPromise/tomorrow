@@ -161,6 +161,39 @@ def save_movie_with_default_thumbnail(movie_data, file=None, thumbnail=None):
                          file_path, thumbnail, movie_data['category']))
 
     return "Movie uploaded successfully!"
+def search_media(query):
+    results = []
+    query = query.lower()
+    
+    # Search database first
+    with sqlite3.connect(DB) as conn:
+        rows = conn.execute(
+            "SELECT id, title, video_path, thumbnail FROM movies WHERE LOWER(title) LIKE ?", 
+            (f"%{query}%",)
+        ).fetchall()
+        for r in rows:
+            results.append({
+                "id": r[0],
+                "title": r[1],
+                "path": r[2],
+                "thumbnail": r[3]
+            })
+
+    # Search files in static/media if not in DB
+    base_dir = os.path.join("static", "media")
+    for root, _, files in os.walk(base_dir):
+        for f in files:
+            if query in f.lower() and f.lower().endswith(('.mp4', '.mkv', '.avi')):
+                rel_path = os.path.relpath(os.path.join(root, f), "static")
+                results.append({
+                    "id": None,
+                    "title": os.path.splitext(f)[0],
+                    "path": rel_path.replace("\\", "/"),
+                    "thumbnail": "static/media/thumbs/default_thumb.jpg"
+                })
+
+    return results
+
 # ----------------- Public Routes -----------------
 @app.route("/")
 def index(): return serve_html("index")
@@ -333,7 +366,11 @@ def download(movie_id):
 # ----------------- API Endpoints -----------------
 @app.route("/api/movies")
 def api_movies():
+    # Ensure the user is logged in
+    if "user" not in session:
+        return jsonify({"error": "Not logged in"}), 403
     return jsonify(fetch_category("Movies"))
+
 
 @app.route("/api/animation")
 def api_animation():
@@ -549,6 +586,15 @@ def most_viewed():
         conn.row_factory = sqlite3.Row
         movies = conn.execute("SELECT id, title, views FROM movies ORDER BY views DESC LIMIT 10").fetchall()
     return jsonify({"movies": [dict(m) for m in movies]})
+
+@app.route("/api/search")
+def api_search():
+    if "user" not in session:
+        return jsonify({"error": "Not logged in"}), 403
+    query = request.args.get("q", "").strip()
+    if not query:
+        return jsonify({"items": []})
+    return jsonify({"items": search_media(query)})
 
 # Payment history
 @app.route("/admin/payments")
